@@ -4,6 +4,7 @@ import logging
 import torch
 import time
 import threading
+from pynput.keyboard import Controller
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
@@ -12,15 +13,21 @@ logging.basicConfig(level=logging.DEBUG)
 # os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
 # Global variables for tracking activity
+keyboard = Controller()  # Keyboard controller for typing at cursor
 last_activity_time = time.time()
-INACTIVITY_TIMEOUT = 5  # seconds
+INACTIVITY_TIMEOUT = 30  # seconds
 stop_recording = False
 
 def process_text(text):
     global last_activity_time
-    # Use a newline before printing detected text for better readability
+    
+    # Print to console for monitoring
     print(f"\nDetected: {text}")
-    # Update the last activity timestamp whenever speech is detected
+    
+    # Type the text at current cursor position (in any active text field)
+    keyboard.type(text + " ")  # Add space after words
+    
+    # Update the last activity timestamp
     last_activity_time = time.time()
 
 def check_inactivity():
@@ -28,7 +35,7 @@ def check_inactivity():
     while not stop_recording:
         if time.time() - last_activity_time > INACTIVITY_TIMEOUT:
             # Add a newline before the message to avoid overlap with spinner
-            print(f"\n\nNo speech detected for {INACTIVITY_TIMEOUT} seconds. Stopping...")
+            print(f"\n\nNo speech detected for {INACTIVITY_TIMEOUT} seconds.")
             stop_recording = True
             # Force the recorder to stop immediately instead of continuing to run
             try:
@@ -74,9 +81,8 @@ if __name__ == '__main__':
             # Ensure recorder is properly shut down
             if 'recorder' in locals():
                 # Print a newline and separator for clean shutdown message
-                print("\n----------------------------")
-                print("Shutting down recorder...")
+                print("\nShutting down recorder...")
                 recorder.shutdown()
         except Exception as e:
             logging.error(f"Error during shutdown: {str(e)}")
-        print("Recording stopped. Goodbye!")
+        print("\nRecording stopped. Goodbye!")
