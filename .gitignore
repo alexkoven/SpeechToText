@@ -1,3 +1,5 @@
 /sample_scripts/
 /venv_realtimestt/
 realtimesst.log
+__pycache__/
+/logs/
