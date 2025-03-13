@@ -18,7 +18,8 @@ stop_recording = False
 
 def process_text(text):
     global last_activity_time
-    print(text)
+    # Use a newline before printing detected text for better readability
+    print(f"\nDetected: {text}")
     # Update the last activity timestamp whenever speech is detected
     last_activity_time = time.time()
 
@@ -26,7 +27,8 @@ def check_inactivity():
     global stop_recording
     while not stop_recording:
         if time.time() - last_activity_time > INACTIVITY_TIMEOUT:
-            print(f"No speech detected for {INACTIVITY_TIMEOUT} seconds. Stopping...")
+            # Add a newline before the message to avoid overlap with spinner
+            print(f"\n\nNo speech detected for {INACTIVITY_TIMEOUT} seconds. Stopping...")
             stop_recording = True
             # Force the recorder to stop immediately instead of continuing to run
             try:
@@ -71,7 +73,10 @@ if __name__ == '__main__':
         try:
             # Ensure recorder is properly shut down
             if 'recorder' in locals():
+                # Print a newline and separator for clean shutdown message
+                print("\n----------------------------")
+                print("Shutting down recorder...")
                 recorder.shutdown()
         except Exception as e:
             logging.error(f"Error during shutdown: {str(e)}")
-        print("Recording stopped.")
+        print("Recording stopped. Goodbye!")
