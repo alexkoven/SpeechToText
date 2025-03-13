@@ -4,7 +4,7 @@ import logging
 import torch
 import time
 import threading
-from pynput.keyboard import Controller
+from gui_printing import paste_to_focused_input
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
@@ -13,7 +13,6 @@ logging.basicConfig(level=logging.DEBUG)
 # os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
 # Global variables for tracking activity
-keyboard = Controller()  # Keyboard controller for typing at cursor
 last_activity_time = time.time()
 INACTIVITY_TIMEOUT = 30  # seconds
 stop_recording = False
@@ -24,8 +23,8 @@ def process_text(text):
     # Print to console for monitoring
     print(f"\nDetected: {text}")
     
-    # Type the text at current cursor position (in any active text field)
-    keyboard.type(text + " ")  # Add space after words
+    # Paste the text at current cursor position with minimal delay
+    paste_to_focused_input(text + " ", delay=0.1)
     
     # Update the last activity timestamp
     last_activity_time = time.time()
