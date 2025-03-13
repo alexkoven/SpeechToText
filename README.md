@@ -1,0 +1,52 @@
+# Linux Dictation
+
+Simple speech-to-text dictation tool hacked together for Linux based on [RealtimeSTT library](https://github.com/KoljaB/RealtimeSTT?tab=readme-ov-file#realtimestt). 
+
+## Features
+
+- Real-time speech recognition using Whisper models through RealtimeSTT
+- Automatic text pasting to the currently focused input field
+- Automatic shutdown on inactivity
+- CUDA acceleration support (when available)
+
+## Files
+
+- **linux_dictation.py**: Main script that handles speech recognition and text processing
+- **gui_printing.py**: Utility for pasting text to the currently focused input field
+- **simple_stt_demo.py**: Simple demonstration of the speech-to-text capabilities
+
+## Requirements
+
+- Python 3.8+
+- PyTorch with CUDA (recommended for better performance)
+- See `requirements.txt` for all Python dependencies
+
+## Installation
+
+1. Clone this repository:
+   ```bash
+   git clone https://github.com/yourusername/linux-dictation.git
+   cd linux-dictation
+   ```
+
+2. Create and activate a virtual environment:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate
+   ```
+
+3. Install the required packages:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+## Usage
+
+Run the dictation tool
+
+
+Wait for the "speak now" prompt, then start speaking. The tool will transcribe your speech and paste it into the currently focused input field.
+
+## Terminal Alias
+
+Add this alias to your `.bashrc` or `.zshrc` file for quick access:

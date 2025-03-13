@@ -20,7 +20,7 @@ speech_logger.setLevel(logging.INFO)
 
 # Global variables for tracking activity
 last_activity_time = time.time()
-INACTIVITY_TIMEOUT = 30  # seconds
+INACTIVITY_TIMEOUT = 300  # time out after 5 minutes
 stop_recording = False
 
 def setup_daily_log_handler():
