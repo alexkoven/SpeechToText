@@ -36,10 +36,10 @@ Simple speech-to-text dictation tool hacked together for Linux machine based on 
 
 ## Usage
 
-Run the dictation tool
+Run the dictation tool with `python linux_dictation.py`
 
 
-Wait for the "speak now" prompt, then start speaking. The tool will transcribe your speech and paste it into the currently focused input field.
+Wait for the "speak now" prompt, then start speaking. If you execute the file for the first time, the code will download the necessary Speech-to-Text models from [Silero VAD](https://github.com/snakers4/silero-vad). Once downloaded, the tool is ready to transcribe your speech and paste it into the currently focused input field.
 
 ## Terminal Alias
 
