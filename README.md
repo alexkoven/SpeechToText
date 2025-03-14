@@ -28,8 +28,9 @@ Simple speech-to-text dictation tool hacked together for Linux machine based on 
    source venv/bin/activate
    ```
 
-3. Install the required packages:
+3. Install the required packages (check your torch versions before executing):
    ```bash
+   pip install torch==2.5.1+cu121 torchaudio==2.5.1 --index-url https://download.pytorch.org/whl/cu121
    pip install -r requirements.txt
    ```
 
