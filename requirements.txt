@@ -1,3 +1,5 @@
 pyperclip==1.9.0
 realtimestt==0.3.98
 torch==2.5.1+cu121
+transformers>=4.39.0
+accelerate==0.27.2

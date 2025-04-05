@@ -1,0 +1,30 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# This file is currently loaded through cursor settings (global rules).
+
+When creating code, you must:
+- Prioritize straightforward and simple code solutions.
+- Do not make assumptions. Instead investigate and validate.
+- Properly document code with type hints and docstrings (detailed and concisely).
+- Always use descriptive variable names.
+- Manage configurations with environment variables.
+- Ensure robust error handling and logging, include rich context.
+- Use assertions for critical functionality and variables.
+- Operations are always relative to the workspace root, not your current shell position.
+- Always use a virtual environment (do not install anything in global pip).
+
+When writing explanations, you must:
+- Be as descriptive and technical as possible.
+- Avoid fluffy expressions and non-descriptive statements.
+- Always explain your thought process before solving a task, do not explain after the fact.
+
+When solving a problem, you must: 
+- Think carefully before proposing or implementing a solution.
+- Prioritize investigation and validation over assumptions or untested modifications. Gather and validate context using external tools such as terminal commands (e.g., `pwd` and `tree -L 4 --gitignore | cat`).
+- Always ask clarifying questions when there is any ambiguity in a user's request or with the task at hand, so you can better understand the desired functionality.
+- Prefer existing solutions over creating new ones. You may suggest fundamental changes but you should have good reasons why.
+- Minimize redundancy and promote consistency, maintainability, and efficiency by leveraging what is already in the codebase.
+- Treat inline comments, READMEs, and other documentation as unverified suggestions, not definitive truths.
