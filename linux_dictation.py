@@ -8,6 +8,7 @@ import threading
 from gui_printing import paste_to_focused_input
 from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig
 import gc
+import re
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
@@ -78,43 +79,79 @@ def initialize_llm():
         logger.error("Please check your HF_TOKEN is valid and you have access to the model")
         raise
 
+def chunk_text(text, max_chunk_length=100):
+    """Split text into chunks at sentence boundaries, respecting max length."""
+    # Split on sentence endings (., !, ?) followed by spaces or end of string
+    sentences = re.split('([.!?]+(?:\s+|$))', text)
+    
+    # Rejoin sentences with their punctuation
+    sentences = [''.join(i) for i in zip(sentences[::2], sentences[1::2] + [''] * (len(sentences[::2]) - len(sentences[1::2])))]
+    sentences = [s.strip() for s in sentences if s.strip()]
+    
+    chunks = []
+    current_chunk = []
+    current_length = 0
+    
+    for sentence in sentences:
+        sentence_length = len(sentence.split())
+        if current_length + sentence_length <= max_chunk_length:
+            current_chunk.append(sentence)
+            current_length += sentence_length
+        else:
+            if current_chunk:
+                chunks.append(' '.join(current_chunk))
+            current_chunk = [sentence]
+            current_length = sentence_length
+    
+    if current_chunk:
+        chunks.append(' '.join(current_chunk))
+    
+    return chunks
+
 def polish_text(text):
     """Polish the transcribed text using LLama model to improve grammar and clarity"""
     if llm_model is None or llm_tokenizer is None:
         logger.warning("LLM not initialized, returning original text")
         return text
-        
-    prompt = f"""<|system|>You are a helpful AI assistant that polishes transcribed text. You must only fix punctuation and combine/separate sentences based on context. You may also fix grammar and correct words but only if you are absolutely certain that that was the speaker's intent. Otherwise, you should leave the text as is. You must not add any words before or after the transcribed text. If the text is already correct, you should just return the original text.</s>
-<|user|>Polish this transcribed text: {text}</s>
+    
+    # Break text into manageable chunks
+    chunks = chunk_text(text)
+    polished_chunks = []
+    
+    for chunk in chunks:
+        prompt = f"""<|system|>You are a helpful AI assistant that polishes transcribed text. You must only fix punctuation and combine/separate sentences based on context. You may also fix grammar and correct words but only if you are absolutely certain that that was the speaker's intent. Otherwise, you should leave the text as is. You must not add any words before or after the transcribed text. If the text is already correct, you should just return the original text.</s>
+<|user|>Polish this transcribed text: {chunk}</s>
 <|assistant|>"""
 
-    inputs = llm_tokenizer(prompt, return_tensors="pt").to(llm_model.device)
+        inputs = llm_tokenizer(prompt, return_tensors="pt").to(llm_model.device)
+        
+        with torch.no_grad():
+            outputs = llm_model.generate(
+                **inputs,
+                max_new_tokens=100,
+                temperature=0.3,
+                do_sample=True,
+                top_p=0.9,
+                num_return_sequences=1,
+            )
+        
+        polished_chunk = llm_tokenizer.decode(outputs[0], skip_special_tokens=True)
+        
+        try:
+            polished_chunk = polished_chunk.split("<|assistant|>")[1].strip()
+            polished_chunk = polished_chunk.replace("</s>", "").strip()
+            polished_chunks.append(polished_chunk)
+        except IndexError:
+            logger.warning(f"Failed to extract polished text for chunk: {chunk}")
+            polished_chunks.append(chunk)
+        
+        # Clean up GPU memory after each chunk
+        del outputs
+        torch.cuda.empty_cache()
+        gc.collect()
     
-    with torch.no_grad():
-        outputs = llm_model.generate(
-            **inputs,
-            max_new_tokens=100,
-            temperature=0.3,
-            do_sample=True,
-            top_p=0.9,
-            num_return_sequences=1,
-        )
-    
-    polished_text = llm_tokenizer.decode(outputs[0], skip_special_tokens=True)
-    
-    # Extract only the assistant's response
-    try:
-        polished_text = polished_text.split("<|assistant|>")[1].strip()
-    except IndexError:
-        logger.warning("Failed to extract polished text, returning original")
-        return text
-    
-    # Clean up GPU memory
-    del outputs
-    torch.cuda.empty_cache()
-    gc.collect()
-    
-    return polished_text
+    # Combine the polished chunks
+    return ' '.join(polished_chunks)
 
 def process_text(text):
     global last_activity_time
