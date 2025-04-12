@@ -114,44 +114,54 @@ def polish_text(text):
         logger.warning("LLM not initialized, returning original text")
         return text
     
-    # Break text into manageable chunks
-    chunks = chunk_text(text)
-    polished_chunks = []
-    
-    for chunk in chunks:
-        prompt = f"""<|system|>You are a helpful AI assistant that polishes transcribed text. You must only fix punctuation and combine/separate sentences based on context. You may also fix grammar and correct words but only if you are absolutely certain that that was the speaker's intent. Otherwise, you should leave the text as is. You must not add any words before or after the transcribed text. If the text is already correct, you should just return the original text.</s>
+    try:
+        # Simulate a GPU memory error for testing
+        if "test memory error" in text.lower():
+            raise RuntimeError("CUDA out of memory. Tried to allocate 2.00 GiB. GPU 0 has a total capacity of 8.00 GiB of which 7.50 GiB is free.")
+        
+        # Break text into manageable chunks
+        chunks = chunk_text(text)
+        polished_chunks = []
+        
+        for chunk in chunks:
+            prompt = f"""<|system|>You are a helpful AI assistant that polishes transcribed text. You must only fix punctuation and combine/separate sentences based on context. You may also fix grammar and correct words but only if you are absolutely certain that that was the speaker's intent. Otherwise, you should leave the text as is. You must not add any words before or after the transcribed text. If the text is already correct, you should just return the original text.</s>
 <|user|>Polish this transcribed text: {chunk}</s>
 <|assistant|>"""
 
-        inputs = llm_tokenizer(prompt, return_tensors="pt").to(llm_model.device)
+            inputs = llm_tokenizer(prompt, return_tensors="pt").to(llm_model.device)
+            
+            with torch.no_grad():
+                outputs = llm_model.generate(
+                    **inputs,
+                    max_new_tokens=100,
+                    temperature=0.3,
+                    do_sample=True,
+                    top_p=0.9,
+                    num_return_sequences=1,
+                )
+            
+            polished_chunk = llm_tokenizer.decode(outputs[0], skip_special_tokens=True)
+            
+            try:
+                polished_chunk = polished_chunk.split("<|assistant|>")[1].strip()
+                polished_chunk = polished_chunk.replace("</s>", "").strip()
+                polished_chunks.append(polished_chunk)
+            except IndexError:
+                logger.warning(f"Failed to extract polished text for chunk: {chunk}")
+                polished_chunks.append(chunk)
+            
+            # Clean up GPU memory after each chunk
+            del outputs
+            torch.cuda.empty_cache()
+            gc.collect()
         
-        with torch.no_grad():
-            outputs = llm_model.generate(
-                **inputs,
-                max_new_tokens=100,
-                temperature=0.3,
-                do_sample=True,
-                top_p=0.9,
-                num_return_sequences=1,
-            )
+        # Combine the polished chunks
+        return ' '.join(polished_chunks)
         
-        polished_chunk = llm_tokenizer.decode(outputs[0], skip_special_tokens=True)
-        
-        try:
-            polished_chunk = polished_chunk.split("<|assistant|>")[1].strip()
-            polished_chunk = polished_chunk.replace("</s>", "").strip()
-            polished_chunks.append(polished_chunk)
-        except IndexError:
-            logger.warning(f"Failed to extract polished text for chunk: {chunk}")
-            polished_chunks.append(chunk)
-        
-        # Clean up GPU memory after each chunk
-        del outputs
-        torch.cuda.empty_cache()
-        gc.collect()
-    
-    # Combine the polished chunks
-    return ' '.join(polished_chunks)
+    except Exception as e:
+        logger.warning(f"Failed to polish text due to error: {str(e)}")
+        logger.warning("Using original text instead")
+        return text
 
 def process_text(text):
     global last_activity_time
@@ -159,15 +169,21 @@ def process_text(text):
     # Print raw text to console for monitoring
     print(f"\nDetected (raw): {text}")
     
-    # Polish the text using LLM
-    polished_text = polish_text(text)
-    print(f"Polished: {polished_text}")
+    try:
+        # Polish the text using LLM
+        polished_text = polish_text(text)
+        print(f"Polished: {polished_text}")
+    except Exception as e:
+        # If polishing fails completely, use original text
+        logger.error(f"Critical error during text polishing: {str(e)}")
+        polished_text = text
+        print(f"Using original text due to polishing error: {text}")
     
     # Log both raw and polished text
     speech_logger.info(f"Raw: {text}")
     speech_logger.info(f"Polished: {polished_text}")
     
-    # Paste the polished text at current cursor position with minimal delay
+    # Paste the text at current cursor position with minimal delay
     paste_to_focused_input(polished_text + " ", delay=0.1)
     
     # Update the last activity timestamp
